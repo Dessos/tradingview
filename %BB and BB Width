@@ -1,0 +1,40 @@
+//@version=3
+//The files in this repository are created by me and provided under the MIT License
+//located at https://github.com/yield65/tradingview/blob/master/LICENSE
+//If you find them useful please consider making a donation, thank you.
+//Bitcoin: 3F636VrPCdnbfrdP5kS4C6fHWVBffXNKCu
+//Litecoin: 33932ckE7i3oAQZxxSgLcvmbn8RAgTc2tk
+//ETH: 0x53A43EF9E56908A9c868FBf2f1b9DE7B3486FDAF
+//contact: bucket@mailbox.org
+
+study(title="%BB and BB Width", precision=2, overlay=false)
+src = close
+showxo = input(false, title="Show crossings?", type=bool)
+bblen = input(20, step=1, title="Channel length")
+bbma = input(true, title="Use ALMA?(SMA)", type=bool)
+showbbw = input(false, title="Show BB Width?", type=bool)
+offset = input(0.55, step=0.05, minval=0.05, maxval=1.0, title="Offset")
+sigma = input(2, step=1, minval=1, title="Sigma")
+bbcolor = #C0C0C0
+lowblue = #0000CD
+highblue = #00BFFF
+bbwcolor1 = #138484
+
+bb_mid = bbma ? alma(src, bblen, offset, sigma) : sma(src, bblen)
+dev = bbma ? 2.0 * stdev(src, bblen) : 2.0 * stdev(src, bblen)
+bb_top = bb_mid + dev
+bb_low = bb_mid - dev
+pbb = (src - bb_low) / (bb_top - bb_low)
+bbw = (bb_top - bb_low)/bb_mid
+bbwcolor = bbw <= 0.025 ? red : bbw <= 0.1 ? yellow : bbw <= 0.2 ? orange : bbwcolor1
+pbbcolor = pbb <= 0.5 ? lime : aqua
+bullishmid = crossover(pbb, 0.5)
+bearishmid = crossunder(pbb, 0.5)
+hline(0, 'Zero', linestyle=dashed, linewidth=1, color=#7B68EE, editable=false)
+hline(.5, 'Half', linestyle=dashed, linewidth=1, color=#7B68EE, editable=false)
+hline(1, 'One', linestyle=dashed, linewidth=1, color=#7B68EE, editable=false)
+plot(showbbw ? bbw : na, linewidth=2, transp=0, style=histogram, editable=true, color=bbwcolor, title="BB Width", transp=0)
+plot(pbb, linewidth=2, transp=0, style=line, editable=true, color=pbbcolor, title="% BB")
+
+plotshape(showxo ? bullishmid : na, title="Dot mark Up", style=shape.arrowup, location=location.top, color=highblue, transp=0, size=size.tiny, editable=false)
+plotshape(showxo ? bearishmid : na, title="Dot mark Down", style=shape.arrowdown, location=location.bottom, color=lowblue, transp=0, size=size.tiny, editable=false)
