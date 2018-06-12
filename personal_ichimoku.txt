@@ -53,13 +53,10 @@ basis = usevwma ? vwma(hl2, bblen) : alma(hl2, bblen, 0.75, 4)
 dev = mult * stdev(hl2, bblen)
 upper = basis + dev
 lower = basis - dev
-color1 = #9D57E8
-color2 = #E34CB4
-color3 = #1874CD
-plot(display_bb ? basis : na, color=color1, style=line, linewidth=2, transp=0, editable=false)
-p1bb = plot(display_bb ? upper : na, color=color2, transp=0, linewidth=2, editable=false)
-p2bb = plot(display_bb ? lower :na, color=color2, transp=0, linewidth=2, editable=false)
-fill(p1bb, p2bb, color=color3, transp=75, editable=true, title="BB Fill")
+plot(display_bb ? basis : na, color=bbcolor1, style=line, linewidth=2, transp=0, editable=false)
+p1bb = plot(display_bb ? upper : na, color=bbcolor2, transp=0, linewidth=2, editable=false)
+p2bb = plot(display_bb ? lower :na, color=bbcolor2, transp=0, linewidth=2, editable=false)
+fill(p1bb, p2bb, color=bbcolor3, transp=75, editable=true, title="BB Fill")
 //====BB====
 
 darkorange = #FF8C00
