@@ -9,23 +9,22 @@
 
 study(title="Ichimoku + ALMA + BB", overlay=true, precision=0)
 
-//tenkanSen = input(8, minval=1, title="Tenkan Sen")
-tenkanSen = 8
-//kijunSen = input(34, minval=1, title="Kijun Sen")
-kijunSen = 34
-//chikouSen = input(8, minval=1, title="Chikou Sen")
-chikouSen = 13
-//senkou = input(55, minval=1)
-senkou = 55
-//displacement = input(21, minval=1)
-displacement = 21
+intraday = isintraday
+showpsar = input(false, "Display PSAR?", type=bool)
+tenkanSen = intraday ? 8 : 9
+kijunSen = intraday ? 34 : 26
+chikouSen = intraday ? 13 : 52
+senkou = intraday ? 55 : 52
+displacement = intraday ? 21 : 52
 chikou_d = input(false, title="Display Chikou?")
+
 maxo = input(false, title="Show ALMAs?")
+showvwap = input(false, title="Show VWAP?")
 display_ma=input(false, "Display EMA Fibs?", type=bool)
 display_bitmex_futures=input(false, "Display BMX QTLY?", type=bool)
 display_bb=input(false, "Display BBs?", type=bool)
-new_bb = input(false, "Use VWMA for BB?", type=bool)
-bblen = input(20, "BB Length?", step=1, minval=1)
+usevwma = input(false, "Use VWMA for BB?(ALMA)", type=bool)
+bbmodel = input(1, minval=1, maxval=3, title="BB Model")
 
 //Note: change and update futures accordingly
 bitmex_futures=security("BITMEX:XBTM18", period, close)
@@ -41,20 +40,26 @@ qtly1 = alma(bitmex_futures, 3, 0.85,6)
 qtly2 = alma(bitmex_futures, 5, 0.85,6)
 qtly3 = alma(bitmex_futures, 8, 0.85,6)
 ribbon_qtly = avg(qtly0,qtly1,qtly2,qtly3)
-plot(display_bitmex_futures ? ribbon_qtly : na, color = #3c78d8, linewidth = 3, title='XBTFutures', transp=0)
+plot(display_bitmex_futures ? bitmex_futures : na, color = #3c78d8, linewidth = 3, title='XBTFutures', transp=0)
 //end ribbon futures
 
 //====BB====
-bbcolor = white
-bb_smooth = 4
-bb_mid = new_bb ? vwma(close, bblen) : alma(close, bblen, 0.55, 1)
-dev = new_bb ? 2.0 * stdev(close, bblen) : 2.0 * stdev(close, 20)
-bb_top = bb_mid + dev
-bb_low = bb_mid - dev
-//display_bb
-plot(display_bb ? bb_top : na, color=bbcolor, linewidth=2, editable=false, transp=0)
-plot(display_bb ? bb_mid : na, color=bbcolor, linewidth=2, editable=false, transp=0)
-plot(display_bb ? bb_low : na, color=bbcolor, linewidth=2, editable=false, transp=0)
+bbcolor1 = #9D57E8
+bbcolor2 = #E34CB4
+bbcolor3 = #1874CD
+mult = bbmodel == 1 ? 2.0 : bbmodel == 2 ? 1.5 : 2.5
+bblen = bbmodel == 1 ? 21 : bbmodel == 2 ? 10 : 50
+basis = usevwma ? vwma(hl2, bblen) : alma(hl2, bblen, 0.75, 4)
+dev = mult * stdev(hl2, bblen)
+upper = basis + dev
+lower = basis - dev
+color1 = #9D57E8
+color2 = #E34CB4
+color3 = #1874CD
+plot(display_bb ? basis : na, color=color1, style=line, linewidth=2, transp=0, editable=false)
+p1bb = plot(display_bb ? upper : na, color=color2, transp=0, linewidth=2, editable=false)
+p2bb = plot(display_bb ? lower :na, color=color2, transp=0, linewidth=2, editable=false)
+fill(p1bb, p2bb, color=color3, transp=75, editable=true, title="BB Fill")
 //====BB====
 
 darkorange = #FF8C00
@@ -62,7 +67,7 @@ darkorange = #FF8C00
 donchian(len) => avg(lowest(len), highest(len))
 tenkan = donchian(tenkanSen)
 kijun = donchian(kijunSen)
-chikouline = alma(hl2, chikouSen, 0.55, 1)
+chikouline = linreg(hl2, 10, 0)
 senkouA = avg(tenkan, kijun)
 senkouB = donchian(senkou)
 
@@ -95,15 +100,16 @@ plot(maxo ? ma3 : na, color=red, transp=0, linewidth=2, editable=false)
 
 //Fib EMAs
 
-ma1_color = #99FFFF
-ma2_color = #7BEBB3
-ma3_color = #61D861
-ma4_color = #87C54A
-ma5_color = #B2B235
-ma6_color = #9F6123
-ma7_color = #8C1515
-ma8_color = #790941
-ma9_color = #660066
+ma1_color = #AAFFFF
+ma2_color = #8DEEC2
+ma3_color = #72DD7E
+ma4_color = #80CC5A
+ma5_color = #A0BB45
+ma6_color = #A98F32
+ma7_color = #994922
+ma8_color = #871421
+ma9_color = #770846
+ma10_color = #660066
 
 plot(display_ma ? ema(close,8) : na, color = ma1_color, linewidth = 2, title='EMA 8', transp=0)
 plot(display_ma ? ema(close,13) : na, color = ma2_color, linewidth = 2, title='EMA 13', transp=0)
@@ -114,3 +120,14 @@ plot(display_ma ? ema(close,89) : na, color = ma6_color, linewidth = 2, title='E
 plot(display_ma ? ema(close,144) : na, color = ma7_color, linewidth = 2, title='EMA 144', transp=0)
 plot(display_ma ? ema(close,233) : na, color = ma8_color, linewidth = 2, title='EMA 233', transp=0)
 plot(display_ma ? ema(close,377) : na, color = ma9_color, linewidth = 2, title='EMA 377', transp=0)
+plot(display_ma ? ema(close,610) : na, color = ma10_color, linewidth = 2, title='EMA 610', transp=0)
+plot(showvwap and isintraday ? vwap(close) : na, color=darkorange, linewidth=2, transp=0, title="VWAP")
+
+//PSAR
+trp=input(35, step=5, minval=0, maxval=100, title="Transparency")
+start = 0.02
+increment = 0.02
+maximum = 0.2
+out = sar(start, increment, maximum)
+psarcolor = out <= close ? #228B22 : #DC143C
+plot(showpsar ? out : na, style=circles, color=psarcolor, transp=trp, editable=false, linewidth=2)
