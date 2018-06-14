@@ -9,15 +9,13 @@
 
 study(title="Ichimoku + ALMA + BB", overlay=true, precision=0)
 
-intraday = isintraday
-showpsar = input(false, "Display PSAR?", type=bool)
-tenkanSen = intraday ? 8 : 9
-kijunSen = intraday ? 34 : 26
-chikouSen = intraday ? 13 : 52
-senkou = intraday ? 55 : 52
-displacement = intraday ? 21 : 52
+tenkanSen = isintraday ? 8 : 9
+kijunSen = isintraday ? 34 : 26
+chikouSen = isintraday ? 13 : 52
+senkou = isintraday ? 55 : 52
+displacement = isintraday ? 21 : 52
 chikou_d = input(false, title="Display Chikou?")
-
+showxobb = input(true, title="%BB bounds?")
 maxo = input(false, title="Show ALMAs?")
 showvwap = input(false, title="Show VWAP?")
 display_ma=input(false, "Display EMA Fibs?", type=bool)
@@ -29,19 +27,11 @@ bbmodel = input(1, minval=1, maxval=3, title="BB Model")
 //Note: change and update futures accordingly
 bitmex_futures=security("BITMEX:XBTM18", period, close)
 
-coinbase = security("COINBASE:BTCUSD", period, close)
-bitstamp = security("BITSTAMP:BTCUSD", period, close)
 offset = input(0.75, title="ALMA offset", step=0.05)
 sigma = input(4, title="ALMA sigma", step=1)
 
-//ribbon futures
-qtly0 = bitmex_futures
-qtly1 = alma(bitmex_futures, 3, 0.85,6)
-qtly2 = alma(bitmex_futures, 5, 0.85,6)
-qtly3 = alma(bitmex_futures, 8, 0.85,6)
-ribbon_qtly = avg(qtly0,qtly1,qtly2,qtly3)
 plot(display_bitmex_futures ? bitmex_futures : na, color = #3c78d8, linewidth = 3, title='XBTFutures', transp=0)
-//end ribbon futures
+
 
 //====BB====
 bbcolor1 = #9D57E8
@@ -120,11 +110,17 @@ plot(display_ma ? ema(close,377) : na, color = ma9_color, linewidth = 2, title='
 plot(display_ma ? ema(close,610) : na, color = ma10_color, linewidth = 2, title='EMA 610', transp=0)
 plot(showvwap and isintraday ? vwap(close) : na, color=darkorange, linewidth=2, transp=0, title="VWAP")
 
-//PSAR
-trp=input(35, step=5, minval=0, maxval=100, title="Transparency")
-start = 0.02
-increment = 0.02
-maximum = 0.2
-out = sar(start, increment, maximum)
-psarcolor = out <= close ? #228B22 : #DC143C
-plot(showpsar ? out : na, style=circles, color=psarcolor, transp=trp, editable=false, linewidth=2)
+//%BB Code starts
+pbbmid = sma(close, bblen)
+pdev = 2.0 * stdev(close, bblen)
+pbbtop = pbbmid + pdev
+pbblow = pbbmid - pdev
+pbb = (close - pbblow) / (pbbtop - pbblow)
+bbw = (pbbtop - pbblow)/pbbmid
+xobot = crossunder(pbb, 0)
+xotop = crossover(pbb, 1)
+alertcondition(xotop, title="%BB > 1", message="%BB breached upwards")
+alertcondition(xobot, title="%BB < 0", message="%BB breached downwards")
+plotshape(showxobb ? pbb >= 1 : na, title="Dot mark Up", style=shape.triangleup, location=location.top, color=yellow, transp=0, size=size.tiny, editable=false)
+plotshape(showxobb ? pbb <= 0 : na, title="Dot mark Down", style=shape.triangledown, location=location.bottom, color=red, transp=0, size=size.tiny, editable=false)
+//%BB Code ends
